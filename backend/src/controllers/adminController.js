@@ -54,7 +54,8 @@ exports.listAllUsers = async (req, res) => {
 
     const enriched = await Promise.all(
       users.map(async (u) => {
-        const base = { ...u };
+        const base = { ...u, hasRecordPassword: !!u.recordPasswordHash };
+        delete base.recordPasswordHash;
         if (u.role === 'consultant') {
           base.profile = await Consultant.findOne({ userId: u._id })
             .select('pmdcNumber specialty clinicName clinicAddress totalEarnings monthlyEarnings walletBalance commissionPercentage maxLabDiscountPercentage promoCode isVerified preferredHospitals verificationDocuments')
@@ -670,6 +671,72 @@ exports.adminChangePassword = async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ success: false, message: 'Failed to change password' });
+  }
+};
+
+exports.setRecordPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User record not found' });
+    }
+
+    if (!password || !password.trim()) {
+      user.recordPasswordHash = null;
+    } else {
+      const bcrypt = require('bcrypt');
+      user.recordPasswordHash = await bcrypt.hash(password.trim(), 10);
+    }
+    await user.save();
+
+    await logAction({
+      req,
+      action: 'ADMIN_SET_RECORD_PASSWORD',
+      entityId: user._id,
+      entityModel: 'User',
+      details: { email: user.email, hasRecordPassword: !!user.recordPasswordHash }
+    });
+
+    res.json({
+      success: true,
+      hasRecordPassword: !!user.recordPasswordHash,
+      message: user.recordPasswordHash ? 'Record password set successfully' : 'Record password protection removed',
+    });
+  } catch (error) {
+    console.error('setRecordPassword error:', error);
+    res.status(500).json({ success: false, message: 'Failed to set record password' });
+  }
+};
+
+exports.verifyRecordPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User record not found' });
+    }
+
+    if (!user.recordPasswordHash) {
+      return res.json({ success: true, verified: true });
+    }
+
+    if (!password) {
+      return res.status(400).json({ success: false, verified: false, message: 'Record password is required' });
+    }
+
+    const bcrypt = require('bcrypt');
+    const isMatch = await bcrypt.compare(password.trim(), user.recordPasswordHash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, verified: false, message: 'Incorrect record password' });
+    }
+
+    res.json({ success: true, verified: true });
+  } catch (error) {
+    console.error('verifyRecordPassword error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify record password' });
   }
 };
 

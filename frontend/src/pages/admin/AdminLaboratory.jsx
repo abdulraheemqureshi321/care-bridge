@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
-  FlaskConical, CheckCircle2, Ban, Save, FileText, Upload, Receipt, Users, ClipboardList, Wallet, X, Eye, Download,
+  FlaskConical, CheckCircle2, Ban, Save, FileText, Upload, Receipt, Users, ClipboardList, X, Eye, Download,
 } from 'lucide-react';
 import api from '../../utils/api';
 import { formatPkr } from '../../utils/formatPkr';
@@ -14,7 +14,6 @@ const SUBTABS = [
   { key: 'labs', label: 'Labs', icon: FlaskConical },
   { key: 'referrals', label: 'Lab Referrals', icon: ClipboardList },
   { key: 'settlements', label: 'Settlements', icon: Receipt },
-  { key: 'payouts', label: 'Payouts', icon: Wallet },
 ];
 
 const uploadFile = async (file) => {
@@ -129,12 +128,6 @@ const LabDetailModal = ({ labId, onClose, onSaved }) => {
           <div className="p-10 text-center text-slate-400 text-sm">Loading…</div>
         ) : (
           <div className="p-5 space-y-6">
-            {/* Earnings summary */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-900 text-white rounded-xl p-4"><p className="text-[10px] text-slate-400 font-bold uppercase">Commission Total</p><p className="text-lg font-black text-sky-400 tabular-nums">{formatPkr(summary.totalPaisa || 0)}</p></div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-4"><p className="text-[10px] text-slate-400 font-bold uppercase">Paid</p><p className="text-lg font-black text-emerald-600 tabular-nums">{formatPkr(summary.paidPaisa || 0)}</p></div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-4"><p className="text-[10px] text-slate-400 font-bold uppercase">Accrued</p><p className="text-lg font-black text-amber-600 tabular-nums">{formatPkr(summary.accruedPaisa || 0)}</p></div>
-            </div>
 
             {/* Editable profile */}
             <section className="space-y-3">
@@ -633,42 +626,7 @@ const SettlementsPanel = () => {
   );
 };
 
-// ── Payouts ledger ──────────────────────────────────────────────────────────────
-const PayoutsPanel = () => {
-  const { data: payouts = [], isLoading } = useQuery({
-    queryKey: ['admin-lab-payouts'],
-    queryFn: async () => (await api.get('/admin/labs/payouts')).data.data,
-  });
-  if (isLoading) return <Loader message="Loading lab payouts..." />;
-  return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
-      <table className="min-w-full text-sm">
-        <thead className="bg-slate-50 dark:bg-slate-950/40 text-slate-500">
-          <tr>
-            <th className="text-left px-4 py-3 font-semibold">Consultant</th>
-            <th className="text-left px-4 py-3 font-semibold">Lab</th>
-            <th className="text-left px-4 py-3 font-semibold">Case</th>
-            <th className="text-left px-4 py-3 font-semibold">Bill</th>
-            <th className="text-left px-4 py-3 font-semibold">Commission</th>
-            <th className="text-left px-4 py-3 font-semibold">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-          {payouts.map((p) => (
-            <tr key={p._id}>
-              <td className="px-4 py-3">{p.consultantId?.userId?.name || '—'}</td>
-              <td className="px-4 py-3">{p.laboratoryId?.labName || '—'}</td>
-              <td className="px-4 py-3 font-mono text-xs">{p.labReferralId?.referralCode || '—'}</td>
-              <td className="px-4 py-3 tabular-nums">{formatPkr(p.totalBillPaisa)}</td>
-              <td className="px-4 py-3 tabular-nums font-bold">{formatPkr(p.amountPaisa)}</td>
-              <td className="px-4 py-3"><span className="text-xs font-bold capitalize">{p.status}</span></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+
 
 const AdminLaboratory = () => {
   const [tab, setTab] = useState('labs');
@@ -680,7 +638,7 @@ const AdminLaboratory = () => {
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-50">Laboratory</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Approve labs, set economics, oversee referrals, settlements, and payouts.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Approve labs, set economics, oversee referrals, and settlements.</p>
         </div>
       </div>
 
@@ -698,7 +656,6 @@ const AdminLaboratory = () => {
       {tab === 'labs' && <LabsPanel />}
       {tab === 'referrals' && <ReferralsPanel />}
       {tab === 'settlements' && <SettlementsPanel />}
-      {tab === 'payouts' && <PayoutsPanel />}
     </div>
   );
 };

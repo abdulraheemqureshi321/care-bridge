@@ -63,7 +63,7 @@ exports.createSettlement = async (req, res) => {
   try {
     const { billingPeriodStart, billingPeriodEnd, admissionIds, billSummaryFileUrl, notes } = req.body;
     
-    if (!billingPeriodStart || !billingPeriodEnd || !admissionIds || !admissionIds.length || !billSummaryFileUrl) {
+    if (!billingPeriodStart || !billingPeriodEnd || !admissionIds || !admissionIds.length) {
       return res.status(400).json({ success: false, message: 'Missing required settlement parameters' });
     }
 
